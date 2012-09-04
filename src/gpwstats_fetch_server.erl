@@ -6,7 +6,7 @@
 %% API Function Exports
 %% ------------------------------------------------------------------
 
--export([start_link/0]).
+-export([start_link/1,fetch_stock/2,fetch_stocks/1]).
 
 %% ------------------------------------------------------------------
 %% gen_server Function Exports
@@ -14,15 +14,13 @@
 
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
-
 %% ------------------------------------------------------------------
 %% API Function Definitions
 %% ------------------------------------------------------------------
+-record(state, {config,link_per_day,last_fetch_time}).
 
--record(state, {link_per_day,last_fetch_time}).
-
-start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+start_link(FetchConfig) ->
+    gen_server:start_link({local, ?SERVER}, ?MODULE, FetchConfig,[]).
 
 fetch_stock(StockName, Pid)->
 	fetch_stocks([{StockName,1}]).
@@ -35,13 +33,62 @@ fetch_stocks(StocksList)->
 %% ------------------------------------------------------------------
 %%
 %%
-init(Args) ->
-    {ok, #state{link_per_day=Args, last_fetch_time=undefined}.
+init(FetchConfig) ->
+    {ok, #state{config=FetchConfig,last_fetch_time=undefined}}.
 
-handle_call({fetch_stocks,StocksList},_From,State)->
+handle_call({fetch_stocks,StocksList},_From,State=#state{config=Config,last_fetch_time=undefined})->
+	FileUrlPrefix = proplists:get_value(stock_url,Config),
+	FileUrlSuffix =proplists:get_value(stock_suffix,Config),
+	FileUrls = list:map(fun(Day)-> FileUrlPrefix ++ Day ++ FileUrlSuffix end, proplists:get_value(stock_days,Config)),
+	MyStocks = proplists:get_value(mystocks,Config),
+	Ref = make_ref(),
+	ChildPids = lists:map(fun(X)-> spawn_link(?MODULE,fetch_single_file,[self(),Ref,X,MyStocks]) end,FileUrls),
+	NumToReceive=length(ChildPids),
+	AllData = receive_responses(NumToReceive,Ref,[]),
+	{reply,prepare_stats(AllData),#state{config=Config,last_fetch_time=erlang:localtime()}};
 	
 handle_call(_Request, _From, State) ->
     {reply, ok, State}.
+
+receive_responses(NumToReceive,Ref,ResponseList)->
+	if NumToReceive < 0;NumToReceive =:= 0 -> ResponseList;
+		true ->
+		%% erlang else
+		receive
+			{ok,Ref,Data} -> receive_responses(NumToReceive-1,Ref,[Data|ResponseList]);
+			_Any -> io:format("Unknown message: ~p~n",[_Any]), ResponseList
+		end
+	end.
+		 
+
+%%
+%% Fetch single file from url 
+fetch_single_file(ParentPid,Ref,FileUrl,MyStocks)->
+	{ok,_Status,_Headers,Data} = ibrowse:send_req(FileUrl,[], get),
+	Lines = string:tokens(Data,"\r\n"),
+	StockSet = lists:foldl(fun(X,Set)-> {StockName,_} = X, gb_sets:add_element(StockName,Set) end, gb_sets:new(), MyStocks),
+	LinesFiltered = lists:filter(fun(L)-> gb_sets:is_element(hd(string:tokens(L,",")),StockSet) end, Lines),
+	ResultData = [string:tokens(L,",") || L <- LinesFiltered],	ResultData = [string:tokens(L,",") || L <- LinesFiltered],
+	%% Give day in year as a first element in tupple
+	ParentPid ! {ok, Ref, {hd(tl(hd(ResultData))), ResultData}},
+	exit(normal).
+
+%% Data has format {day,[StockName,OpenValue,CloseValue,_]}
+prepare_stats([])->
+	[];
+prepare_stats(AllData)->
+	SortedByDay = lists:sort(fun(A,B) -> element(1,A) < element(1,B) end, AllData),
+	StockNames = [ StockName || [StockName|_Rest] <- element(2,hd(SortedByDay))],
+	[[StockName,{avg,calculate_average(StockName,SortedByDay)}] || StockName <- StockNames]	
+.
+
+calculate_average(StockName,Data)->
+	D = [hd(X) || X <- lists:map(fun({_Day, Vals})-> lists:filter(fun(V)-> hd(V) =:= StockName end,Vals) end, Data)],
+	%% take third element from list - close price
+	lists:sum([hd(tl(tl(DX))) || DX <- D]) / length(D).
+		
+	
+	
 
 handle_cast(_Msg, State) ->
     {noreply, State}.

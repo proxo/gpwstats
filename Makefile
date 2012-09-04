@@ -11,4 +11,4 @@ clean:
 test: app
 	@$(REBAR) eunit skip_deps=true
 start:
-	exec erl -pa $(PWD)/ebin  -pa $(PWD)/deps/*/ebin -config $(PWD)/priv/app.config -s gpwstats
+	exec erl -pa $(PWD)/ebin  -pa $(PWD)/deps/*/ebin -boot start_sasl -config $(PWD)/priv/app.config -s gpwstats
