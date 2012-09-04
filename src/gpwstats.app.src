@@ -1,0 +1,16 @@
+{application, gpwstats,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, [gpwstats]},
+  {applications, [
+                  kernel,
+                  stdlib,
+				  ibrowse,
+				  crypto,
+				  ssl,
+				  public_key
+                 ]},
+  {mod, { gpwstats_app, []}},
+  {env, []}
+ ]}.

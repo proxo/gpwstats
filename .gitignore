@@ -1,0 +1,9 @@
+ebin
+*.swp
+eunit
+deps
+*.o
+*.beam
+*.plt
+%% rebar to
+rebar
