@@ -1,8 +1,9 @@
 {application, gpwstats,
  [
-  {description, ""},
+  {description, "Simple stock statistics generator for polish GPW"},
   {vsn, "1"},
-  {registered, [gpwstats,gpwstats_fetch_server,gpwstats_sup,gpwstats_app]},
+  {registered, [gpwstats, gpwstats_fetch_server]},
+  {modules,[gpwstats,gpwstats_fetch_server,gpwstats_sup,gpwstats_app]},
   {applications, [
                   kernel,
                   stdlib,
@@ -11,6 +12,6 @@
 				  ssl,
 				  public_key
                  ]},
-  {mod, { gpwstats_app, [gpwstats_fetch_server,gpwstats_sup,gpwstats_app]}},
+  {mod, { gpwstats_app, []}},
   {env, []}
  ]}.
