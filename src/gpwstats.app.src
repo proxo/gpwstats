@@ -2,7 +2,7 @@
  [
   {description, ""},
   {vsn, "1"},
-  {registered, [gpwstats]},
+  {registered, [gpwstats,gpwstats_fetch_server,gpwstats_sup,gpwstats_app]},
   {applications, [
                   kernel,
                   stdlib,
@@ -11,6 +11,6 @@
 				  ssl,
 				  public_key
                  ]},
-  {mod, { gpwstats_app, []}},
+  {mod, { gpwstats_app, [gpwstats_fetch_server,gpwstats_sup,gpwstats_app]}},
   {env, []}
  ]}.
