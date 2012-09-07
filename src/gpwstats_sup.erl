@@ -2,7 +2,7 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/1]).
+-export([start_link/1, start/0]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -18,17 +18,18 @@
 %% API functions
 %% ===================================================================
 
+start()->
+			spawn(fun()-> supervisor:start_link({local,?MODULE}, ?MODULE, _Arg = []) end).
 start_link(AppConfig) ->
 	io:format("Starting supervisor ~p~n",[AppConfig]),
-    supervisor:start_link({local, ?MODULE}, ?MODULE, [AppConfig]).
+    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 %% ===================================================================
 %% Supervisor callbacks
 %% ===================================================================
 
-init(_AppConfig) ->
-	io:format("Staring supervising child with config: ~p~n",[_AppConfig]),
-	Server = {gpwstats_fetch_server,{gpwstats_fetch_server,start_link,[]},permanent,5000,worker,dynamic},
+init([]) ->
+	Server = {gpwstats_fetch_server,{gpwstats_fetch_server,start_link,[]},permanent,5000,worker,[gpwstats_fetch_server]},
 	Childs = [Server], 
 	?TRACE(Server),
-    {ok, { {one_for_one, 5, 10},Childs} }.
+    {ok, { {one_for_one,10,10},Childs} }.

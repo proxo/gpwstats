@@ -1,6 +1,3 @@
-%% -*- tab-width: 4;erlang-indent-level: 4;indent-tabs-mode: nil -*-
-%% ex: ts=4 sw=4 ft=erlang et
-
 -module(gpwstats_fetch_server).
 -behaviour(gen_server).
 -define(SERVER, ?MODULE).
@@ -14,7 +11,7 @@
 %% gen_server Function Exports
 %% -----------------------------------------------------------------
 
--export([start_link/1,fetch_stock/2,fetch_stocks/1,stop/0,init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+-export([start_link/1,fetch_stock/2,fetch_stocks/1,stop/0,init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3,fetch_single_file/4]).
 %% ------------------------------------------------------------------
 %% Macros
 %% ------------------------------------------------------------------
@@ -31,8 +28,10 @@
 -record(state, {config,link_per_day,last_fetch_time}).
 
 start_link(Data) ->
+    io:format("Start init_link child~n"),
     ?TRACE("Starting gen_server - fetch_server",[]),
     FetchConfig = application:get_all_env(gpwstats),
+    io:format("2. Start init_link child~n"),
     gen_server:start_link({local, ?SERVER}, ?MODULE, [FetchConfig],[]).
 
 fetch_stock(StockName, Pid)->
@@ -50,8 +49,13 @@ stop()->
 %%
 %%
 init([FetchConfig]) ->
+    %% Clean up before termination - terminate(shutdown,_)
+    process_flag(trap_exit, true),
     ?TRACE("Initial config ~p",[FetchConfig]),
-    {ok, #state{config=FetchConfig,last_fetch_time=undefined}}.
+    {ok, #state{config=FetchConfig,last_fetch_time=undefined}};
+init(_X)->
+    io:format("not unknown init[]~n"),
+    {ok,[]}.
 
 handle_call({fetch_stocks,StocksList},_From,State=#state{config=Config,last_fetch_time=undefined})->
 	FileUrlPrefix = proplists:get_value(stock_url,Config),
@@ -62,6 +66,7 @@ handle_call({fetch_stocks,StocksList},_From,State=#state{config=Config,last_fetc
 	ChildPids = lists:map(fun(X)-> spawn_link(?MODULE,fetch_single_file,[self(),Ref,X,MyStocks]) end,FileUrls),
 	NumToReceive=length(ChildPids),
 	AllData = receive_responses(NumToReceive,Ref,[]),
+    io:format("All data parsed!~n"),
 	{reply,prepare_stats(AllData),#state{config=Config,last_fetch_time=erlang:localtime()}};
 	
 handle_call(_Request, _From, State) ->
@@ -124,6 +129,9 @@ handle_cast(_Msg, State) ->
 handle_info(_Info, State) ->
     {noreply, State}.
 
+terminate(shutdown,_State)->
+    ?TRACE("Got shutdown request -> terminating",[]),
+    ok;
 terminate(_Reason, _State) ->
     ok.
 

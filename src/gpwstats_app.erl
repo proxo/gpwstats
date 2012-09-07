@@ -11,7 +11,10 @@
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
-    gpwstats_sup:start_link(application:get_all_env(?APP)).
+	io:format("start app~n"),
+	R = gpwstats_sup:start_link(application:get_all_env(?APP)),
+	io:format("start app~n"),
+	R.
 
 stop(_State) ->
     ok.
