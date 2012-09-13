@@ -1,0 +1,23 @@
+<!DOCTYPE HTML>
+<html>
+<head><title>GPWStats</title></head>
+<body>
+<h2>Welcome Master, {{ name }} !</h2>
+
+<p>Stocks {{ startDate|default:"no-data" }} {{ endDate|default:"no-data" }} </p>
+<table width="80%" border="1">
+	<tr>	
+		<th align="left">Symbol</th>
+		<th align="left">Average</th>
+		<th align="left">Open</th>
+		<th align="left">Close</th>
+		<th align="left">%Diff</th>
+		<th align="left">Min</th>
+		<th align="left">Max</th>
+	</tr>
+{% for i in stocks %}
+     <tr> {{ i }} </tr>
+{% endfor %}
+</table>
+</body>
+</html>

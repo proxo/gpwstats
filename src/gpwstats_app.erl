@@ -1,5 +1,5 @@
 -module(gpwstats_app).
-
+-author("Piotr Maśko").
 -behaviour(application).
 
 %% Application callbacks
@@ -11,9 +11,10 @@
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
-	io:format("start app~n"),
-	R = gpwstats_sup:start_link(application:get_all_env(?APP)),
-	io:format("start app~n"),
+	AllEnv = application:get_all_env(?APP),
+	%% io:format("Using env: ~p~n",[AllEnv]),
+	R = gpwstats_sup:start_link(AllEnv),
+	%% io:format("start app: ~p~n", [R]),
 	R.
 
 stop(_State) ->

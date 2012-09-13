@@ -1,0 +1,6 @@
+TODO:
+- add sasl loging config
+- start application
+- add more statistics:
+	min,max,diffWeek,diffWeekPercent,moneyChangeWeek
+

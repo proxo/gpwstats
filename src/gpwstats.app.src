@@ -2,15 +2,18 @@
  [
   {description, "Simple stock statistics generator for polish GPW"},
   {vsn, "1"},
-  {registered, [gpwstats, gpwstats_fetch_server]},
-  {modules,[gpwstats, gpwstats_fetch_server, gpwstats_sup, gpwstats_app]},
+  {registered, [gpwstats]},
+  {modules,[gpwstats,gpwstats_fetch_server, gpwstats_sup, gpwstats_app]},
   {applications, [
                   kernel,
                   stdlib,
 				  ibrowse,
 				  crypto,
+				  inets,
 				  ssl,
-				  public_key
+				  public_key,
+				  mochiweb,
+				  webmachine
                  ]},
   {mod, { gpwstats_app, []}},
   {env, []}
